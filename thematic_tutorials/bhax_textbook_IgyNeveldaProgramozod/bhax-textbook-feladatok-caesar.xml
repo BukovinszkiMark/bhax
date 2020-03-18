@@ -1,0 +1,440 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló, Caesar!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+    <section>
+        <title><type>double **</type> háromszögmátrix</title>
+        <para>
+            Írj egy olyan <function>malloc</function> és <function>free</function>
+            párost használó C programot, amely helyet foglal
+            egy alsó háromszög mátrixnak a szabad tárban!
+        </para>
+        <para>
+            Megoldás videó: <link xlink:href="https://youtu.be/1MRTuKwRsB0">https://youtu.be/1MRTuKwRsB0</link>,
+            <link xlink:href="https://youtu.be/RKbX5-EWpzA">https://youtu.be/RKbX5-EWpzA</link>.
+        </para>
+        <para>
+            Megoldás forrása: <link xlink:href="Caesar/tm.c">
+                <filename>bhax/thematic_tutorials/bhax_textbook_IgyNeveldaProgramozod/Caesar/tm.c</filename>
+            </link> 
+        </para>
+        <programlisting language="c"><![CDATA[#include <stdio.h>
+#include <stdlib.h>
+
+int
+main ()
+{
+    int nr = 5;
+    double **tm;
+
+    if ((tm = (double **) malloc (nr * sizeof (double *))) == NULL)
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < nr; ++i)
+    {
+        if ((tm[i] = (double *) malloc ((i + 1) * sizeof (double))) == NULL)
+        {
+            return -1;
+        }
+
+    }
+
+    for (int i = 0; i < nr; ++i)
+        for (int j = 0; j < i + 1; ++j)
+            tm[i][j] = i * (i + 1) / 2 + j;
+
+    for (int i = 0; i < nr; ++i)
+    {
+        for (int j = 0; j < i + 1; ++j)
+            printf ("%f, ", tm[i][j]);
+        printf ("\n");
+    }
+
+    tm[3][0] = 42.0;
+    (*(tm + 3))[1] = 43.0;	// mi van, ha itt hiányzik a külső ()
+    *(tm[3] + 2) = 44.0;
+    *(*(tm + 3) + 3) = 45.0;
+
+    for (int i = 0; i < nr; ++i)
+    {
+        for (int j = 0; j < i + 1; ++j)
+            printf ("%f, ", tm[i][j]);
+        printf ("\n");
+    }
+
+    for (int i = 0; i < nr; ++i)
+        free (tm[i]);
+
+    free (tm);
+
+    return 0;
+}]]></programlisting>
+        <figure>
+            <title>A <type>double **</type> háromszögmátrix a memóriában</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/doublecscs.png" scale="50" />
+                </imageobject>
+                <textobject>
+                    <phrase>A <type>double **</type> háromszögmátrix a memóriában</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>                             
+        <para>
+            Tanulságok, tapasztalatok, magyarázat...
+        </para>            
+<para>
+A feladatnak a számunkra jelenleg érdekes része a "double **tm"  kifejezés szintaktikája:
+</para>
+<para>
+(A magyarázatot érdemes a felső ábrát figyelve olvasni)
+Először is, vizsgáljuk meg hogy mi is a "double **tm" alapvető szintaktikája. Ez alapvetően egy pointer, a kérdés már csak az, hogy mire mutat. A válsz pedig az, hogy "double *tm"-ekre, azaz double-re mutató pointerekre mutat. És végül, ezek a "double *tm" pointerek mutatnak majd a double értékekre. (Ezt jelenti az ábra 3 sora.)
+</para>
+<para>
+A következő kérdés az lehet, hogy hogyan értelmezzük a "+1" részeket a kifejezésekben. Az alapvető elvünk az lesz, hogy amikor egy pointeren belül látunk "+1" kifejezést, akkor az általa mutatott érték rákövetkezőjét vesszük. (Ez a mi programunkban az adott tömb következő eleme.)         
+</para>
+<para>
+Értelmezzük akkor a "*(*(tm+1)+1)" kifejezést.          
+</para>
+<para>
+A "*(tm+1)" egy pointer, ami egy adott tömb második elemére mutat. A "*(*(tm+1)+1)" egy olyan pointer, ami egy tömb második elemére mutat, amely elem egy pointer, ami egy tömb második elemére mutat, ami egy double érték.          
+</para>
+<para>
+Az utolsó kérdés(, ami a programban kommentként szerepel is) az, hogy mi lenne, ha a "(*(tm+3))[1]" kifejezést, "*(tm+3)[1]"-re cserélnénk. Először is a "[1]"-et "*(...+1)"-re cserélhetjük:
+</para>
+<para>
+Az első kifejezésünk így: *((*(tm+3))+1)
+Ez pedig egy olyan pointer, ami egy tömb második elemére mutat, ez a második elem, egy olyan pointer lesz, ami egy tömb negyedik elemére mutat, ami pedig egy double érték lesz.         
+</para>
+<para>
+A második kifejezésünk pedig: **((tm+3)+1)
+Ez egy olyan pointer, ami egy pointerre mutat, amely pointer egy tömb ötödik elemére mutat, ami egy double érték lesz.          
+</para>
+    </section>        
+    <section>
+        <title>C EXOR titkosító</title>
+        <para>
+            Írj egy EXOR titkosítót C-ben!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása: egy részletes feldolgozása az 
+            <link xlink:href="https://progpater.blog.hu/2011/02/15/felvetelt_hirdet_a_cia">e.c és t.c forrásoknak</link>.               
+        </para>
+<programlisting language="c"><![CDATA[
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+#define MAX_KULCS 100
+#define BUFFER_MERET 256
+
+int
+main (int argc, char **argv)
+{
+
+  char kulcs[MAX_KULCS];
+  char buffer[BUFFER_MERET];
+
+  int kulcs_index = 0;
+  int olvasott_bajtok = 0;
+
+  int kulcs_meret = strlen (argv[1]);
+  strncpy (kulcs, argv[1], MAX_KULCS);
+
+  while ((olvasott_bajtok = read (0, (void *) buffer, BUFFER_MERET)))
+    {
+
+      for (int i = 0; i < olvasott_bajtok; ++i)
+	{
+
+	  buffer[i] = buffer[i] ^ kulcs[kulcs_index];
+	  kulcs_index = (kulcs_index + 1) % kulcs_meret;
+
+	}
+
+      write (1, buffer, olvasott_bajtok);
+
+    }
+}
+]]></programlisting>
+<para>
+A programot így fogjuk tudni futtatni:         
+</para>   
+<screen><![CDATA[
+./e kulcs <tiszta.szoveg >titkos.szoveg
+]]></screen> 
+        <para>
+            Tanulságok, tapasztalatok, magyarázat... ezt kell az olvasónak kidolgoznia, mint labor- vagy otthoni mérési feladatot!
+            Ha mi már megtettük, akkor használd azt, dolgozd fel, javítsd, adj hozzá értéket!
+        </para>
+<para>
+A program láthatóan végigmegy a bemeneti fájlon és bitenként végez exor műveletet. Ennek eredménye pedig egy teljesen olvashatatlan karakterlánc.
+</para>
+<para>
+Vegyük észre, hogy az exor művelet tulajdonságaiból fakadóan, ha ugyanazon fájlon ugyanazzal a kulccsal 2-szer végezzük ugyanazt a műveletet, akkor visszakapjuk az eredeti szöveget. Tehát a kulcs birtokában ugyanezen program alkalmas a dekódolásra is, az alábbi módon:
+</para>
+<screen><![CDATA[
+./e kulcs <titkos.szoveg
+]]></screen> 
+    </section>        
+    <section>
+        <title>Java EXOR titkosító</title>
+        <para>
+            Írj egy EXOR titkosítót Java-ban!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása: <link xlink:href="https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/ch01.html#exor_titkosito">https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/ch01.html#exor_titkosito</link>               
+        </para>
+<programlisting language="java"><![CDATA[
+public class ExorTitkosító {
+    
+    public ExorTitkosító(String kulcsSzöveg,
+            java.io.InputStream bejövőCsatorna,
+            java.io.OutputStream kimenőCsatorna)
+            throws java.io.IOException {
+        
+        byte [] kulcs = kulcsSzöveg.getBytes();
+        byte [] buffer = new byte[256];
+        int kulcsIndex = 0;
+        int olvasottBájtok = 0;
+
+        while((olvasottBájtok =
+                bejövőCsatorna.read(buffer)) != -1) {
+            
+            for(int i=0; i<olvasottBájtok; ++i) {
+                
+                buffer[i] = (byte)(buffer[i] ^ kulcs[kulcsIndex]);
+                kulcsIndex = (kulcsIndex+1) % kulcs.length;
+            }
+            kimenőCsatorna.write(buffer, 0, olvasottBájtok);   
+        }        
+    }
+    
+    public static void main(String[] args) {
+        try {
+            new ExorTitkosító(args[0], System.in, System.out);
+        } catch(java.io.IOException e) {
+            
+            e.printStackTrace();
+        }
+    }    
+}
+]]></programlisting>   
+        <para>
+            Tanulságok, tapasztalatok, magyarázat...
+        </para>            
+<para>
+Ez a program gyakorlatilag teljesen megegyezik az előbbi c programmal, persze eltekintva a szintaktikától.
+</para>
+<para>
+A programot így fordítjuk:  
+</para>
+<screen><![CDATA[
+javac ej.java
+]]></screen> 
+<para>
+Majd így futtatjuk:  
+</para>
+<screen><![CDATA[
+java ej kulcs > titkosított.szöveg
+]]></screen> 
+<para>
+A változatosság kedvéért, itt nem fájlból olvasunk majd, hanem a terminál bemenetéből. Tehát az előző parancs után a programunk még vár egy bemenetre. (Ezt szimplán csak gépeljük be, vagy másoljuk át a terminálba.)
+</para>
+    </section>        
+    <section xml:id="bhax-textbook-feladatok-caesar.EXOR-toro">
+        <title>C EXOR törő</title>
+        <para>
+            Írj egy olyan C programot, amely megtöri az első feladatban előállított titkos szövegeket!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+<programlisting language="c"><![CDATA[
+#define MAX_TITKOS 4096
+#define OLVASAS_BUFFER 256
+#define KULCS_MERET 8
+#define _GNU_SOURCE
+
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+double
+atlagos_szohossz (const char *titkos, int titkos_meret)
+{
+  int sz = 0;
+  for (int i = 0; i < titkos_meret; ++i)
+    if (titkos[i] == ' ')
+      ++sz;
+
+  return (double) titkos_meret / sz;
+}
+
+int
+tiszta_lehet (const char *titkos, int titkos_meret)
+{
+  // a tiszta szoveg valszeg tartalmazza a gyakori magyar szavakat
+  // illetve az átlagos szóhossz vizsgálatával csökkentjük a
+  // potenciális töréseket
+
+  double szohossz = atlagos_szohossz (titkos, titkos_meret);
+
+  return szohossz > 6.0 && szohossz < 9.0
+    && strcasestr (titkos, "hogy") && strcasestr (titkos, "nem")
+    && strcasestr (titkos, "az") && strcasestr (titkos, "ha");
+
+}
+
+void
+exor (const char kulcs[], int kulcs_meret, char titkos[], int titkos_meret)
+{
+
+  int kulcs_index = 0;
+
+  for (int i = 0; i < titkos_meret; ++i)
+    {
+
+      titkos[i] = titkos[i] ^ kulcs[kulcs_index];
+      kulcs_index = (kulcs_index + 1) % kulcs_meret;
+
+    }
+
+}
+
+int
+exor_tores (const char kulcs[], int kulcs_meret, char titkos[],
+	    int titkos_meret)
+{
+
+  exor (kulcs, kulcs_meret, titkos, titkos_meret);
+
+  return tiszta_lehet (titkos, titkos_meret);
+
+}
+
+int
+main (void)
+{
+
+  char kulcs[KULCS_MERET];
+  char titkos[MAX_TITKOS];
+  char *p = titkos;
+  int olvasott_bajtok;
+
+  // titkos fajt berantasa
+  while ((olvasott_bajtok =
+	  read (0, (void *) p,
+		(p - titkos + OLVASAS_BUFFER <
+		 MAX_TITKOS) ? OLVASAS_BUFFER : titkos + MAX_TITKOS - p)))
+    p += olvasott_bajtok;
+
+  // maradek hely nullazasa a titkos bufferben  
+  for (int i = 0; i < MAX_TITKOS - (p - titkos); ++i)
+    titkos[p - titkos + i] = '\0';
+
+  // osszes kulcs eloallitasa
+  for (int ii = '0'; ii <= '9'; ++ii)
+    for (int ji = '0'; ji <= '9'; ++ji)
+      for (int ki = '0'; ki <= '9'; ++ki)
+	for (int li = '0'; li <= '9'; ++li)
+	  for (int mi = '0'; mi <= '9'; ++mi)
+	    for (int ni = '0'; ni <= '9'; ++ni)
+	      for (int oi = '0'; oi <= '9'; ++oi)
+		for (int pi = '0'; pi <= '9'; ++pi)
+		  {
+		    kulcs[0] = ii;
+		    kulcs[1] = ji;
+		    kulcs[2] = ki;
+		    kulcs[3] = li;
+		    kulcs[4] = mi;
+		    kulcs[5] = ni;
+		    kulcs[6] = oi;
+		    kulcs[7] = pi;
+
+		    if (exor_tores (kulcs, KULCS_MERET, titkos, p - titkos))
+		      printf
+			("Kulcs: [%c%c%c%c%c%c%c%c]\nTiszta szoveg: [%s]\n",
+			 ii, ji, ki, li, mi, ni, oi, pi, titkos);
+
+		    // ujra EXOR-ozunk, igy nem kell egy masodik buffer  
+		    exor (kulcs, KULCS_MERET, titkos, p - titkos);
+		  }
+
+  return 0;
+}
+
+]]></programlisting>   
+        <para>
+            Tanulságok, tapasztalatok, magyarázat...
+        </para>  
+<para>
+Ez a program alapvetően azt csinálja, hogy rengeteg egymásba ágyazott for ciklus segítségével, szisztematikusan végigpróbál minden számkonbinációt. (Természetesen a feltételek módosíthatóak, például számok helyett betűket, vagy számok és betűk, de akár speciális karakterek halmazának minden elemével is dolgozhatunk.)         
+</para>
+<para>
+A program továbbá tartalmaz szűrőket is. Ez azért kell, mert a rengeteg próbálkozásből, mi csakis az eredeti értelmes szövegre vagyunk kíváncsiak, így megadtunk pár feltételt. Az egyik ilyen feltétel, hogy az átlagos szóhossz, bizonyos hibahatáron belül kell, hogy legyen az átlagos magyar szóhosszhoz képest. A második feltételünk, hogy a szöveg tartalmazza a magyar nyelv leggyakoribb kifejezéseit. (hogy, nem , az , ha)         
+</para>
+<para>
+A program emellet remekül mutatja, hogy miért érdemes a #define parancsot használni a konstans értékeknél, mert például, ha a kulcsról tudjuk, hogy 10 karakteres, akkor a programot e szerint kell átírnunk. Ebben a konkrét esetben pedig, ha nem használtuk volna a #define parancsot, akkor az adott érték összes előfordulását manuálisan kellett volna módosítani, a #define által pedig elég csak 1 módosítás. (Ez a nagyobb programoknál jelentős mennyiségű időt takarít meg, illetve rengeteg olyan hibát előzhetünk meg vele, amit egy félregépelt, vagy elmulasztott módosítás okozhatott volna.)         
+</para>
+</section>        
+    <section>
+        <title>Neurális OR, AND és EXOR kapu</title>
+        <para>
+            R
+        </para>
+        <para>
+            Megoldás videó: <link xlink:href="https://youtu.be/Koyw6IH5ScQ">https://youtu.be/Koyw6IH5ScQ</link>
+        </para>
+        <para>
+            Megoldás forrása: <link xlink:href="https://gitlab.com/nbatfai/bhax/tree/master/attention_raising/NN_R">https://gitlab.com/nbatfai/bhax/tree/master/attention_raising/NN_R</link>               
+        </para>
+        <para>
+            Tanulságok, tapasztalatok, magyarázat...
+        </para>            
+<para>
+A programunk itt egy R-ben ábrázolt neurális háló. De először is, mi az a neurális háló? A neurális háló egy az egyhoz hasonló felépítésű rendszer, amely neuronokból, illetve köztük lévő kapcsolatokból áll.  
+</para>
+<para>
+A konkrét program most arról szól, hogy megadtuk egy-egy logikai művelet (és, vagy, exor) eredményeit, anélkül, hogy a gépnek megadtuk volna a műveletet. A gép tehát pusztán az a kapott adatokból próbálja kitalálni, hogy adott bemenetekből milyen matematikai műveletekkel kaphatja meg a kívánt kimenetet. (Ez a művelet egyébként általában egy súlyozott összegzés.) 
+</para>
+<para>
+Az "és", illetve "vagy" műveleteknél ez működött is, azonban a harmadik programunk nem működött. Ez azért történt, mivel az exor műveletet már nem lehet direktbe egy súlyozott összeadással magoldani, itt már szükség van további "neuronokra" a hálón. Ha a negyedik programot futtatjuk, akkor az uyganerre az exor műveletre már helyes eredményt ad.         
+</para>
+<para>
+Érdekesség:
+Az exor műveletnél feljött probléma egyébként, olyan zavarónak tűnt, hogy ezért sokáig nem vették komolyan a neurális hálókat, mint programozási eszközöket, mivel etéren az exor művelet eléggé alapvető. Az utókor viszont rácáfolt erre a hozzáállásra, ugyanis a mai kor legfontosabb informatikai áttöréseit (arcfelismerés, szimulációk, kép- és hangmanipuláció, ...) neurális hálozatokkal érték el.             
+</para>
+    </section>        
+    <section>
+        <title>Hiba-visszaterjesztéses perceptron</title>
+        <para>
+            C++
+        </para>
+        <para>
+            Megoldás videó: <link xlink:href="https://youtu.be/XpBnR31BRJY">https://youtu.be/XpBnR31BRJY</link>
+        </para>
+        <para>
+            Megoldás forrása: <link xlink:href="https://github.com/nbatfai/nahshon/blob/master/ql.hpp#L64">https://github.com/nbatfai/nahshon/blob/master/ql.hpp#L64</link>               
+        </para>
+        <para>
+            Tanulságok, tapasztalatok, magyarázat...
+        </para>            
+    </section>        
+        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+</chapter>                
