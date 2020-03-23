@@ -433,7 +433,19 @@ Az exor műveletnél feljött probléma egyébként, olyan zavarónak tűnt, hog
         </para>
         <para>
             Tanulságok, tapasztalatok, magyarázat...
-        </para>            
+        </para>    
+<para>
+Maga a program elég komplex, ezért egyenlőre mindössze a perceptorok többrétegű kezelésével fogunk foglalkozni, konkrétabban a ***double jelentésével.       
+</para>
+<para>
+A ***double egy pointer, ami pointerekre mutat, amik pointerekre mutatnak, amik double-ökre mutatnak. Konkrétabban ez egy háromrétegű háló amely double-ökkel dolgozik.          
+</para>
+<para>
+A különböző rétegek tettszőleges számú elemmel rendelkezhetnek, amelyek tettszőleges indexű elemeit a már fent (a **double háromszögmátrixnál) ismertetett módokon hibatkozhatunk. A programban az átláthatóság, illetve olvashatóság kedvéért a pointer[index][index][index] formát használtuk. 
+</para>
+<para>
+A konkrét értékadásokat ebben a programban egymásba ágyazott for ciklusokkal végeztük.         
+</para>
     </section>        
         
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
